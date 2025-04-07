@@ -38,18 +38,14 @@ class MainWindow(QMainWindow):
         self.set_application_style()
         
         # Load icon if available, otherwise use default
-        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 
+        # Updated path to point to the project resources directory
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
                                 "resources", "icons", "cleaner_icon.ico")
+        
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
         else:
-            # Try to find icon in parent directory
-            icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), 
-                                    "cleaner_icon.ico")
-            if os.path.exists(icon_path):
-                self.setWindowIcon(QIcon(icon_path))
-            else:
-                self.setWindowIcon(QIcon(self.style().standardIcon(QStyle.SP_TrashIcon)))
+            self.setWindowIcon(QIcon(self.style().standardIcon(QStyle.SP_TrashIcon)))
         
         # Initialize variables
         self.current_directory = None
@@ -883,18 +879,19 @@ class MainWindow(QMainWindow):
         
         # Add the icon at the top
         icon_label = QLabel()
-        # Try to use PNG version first for better quality
-        png_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 
-                              "resources", "icons", "cleaner_icon.png")
+        # Try to use PNG version first for better quality - updated path
+        png_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+                              "resources", "icons", "cleaner_icon.PNG")
+        
         if os.path.exists(png_path):
             icon_pixmap = QPixmap(png_path).scaled(128, 128, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             icon_label.setPixmap(icon_pixmap)
         else:
-            # Try to find icon in parent directory or elsewhere
-            png_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), 
-                                  "cleaner_icon.png")
-            if os.path.exists(png_path):
-                icon_pixmap = QPixmap(png_path).scaled(128, 128, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            # Fall back to ICO file if PNG is not available
+            ico_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+                                  "resources", "icons", "cleaner_icon.ico")
+            if os.path.exists(ico_path):
+                icon_pixmap = QPixmap(ico_path).scaled(128, 128, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 icon_label.setPixmap(icon_pixmap)
             
         icon_label.setAlignment(Qt.AlignCenter)
