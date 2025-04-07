@@ -1,0 +1,24 @@
+
+# Delete node_modules and see progress bars
+python dir_cleaner.py node-modules E:/workspace/football_app/ --parallel
+
+# Delete only large node_modules folders
+python dir_cleaner.py node-modules E:/workspace/football_app/ --min-size 50MB
+
+# Preview what would be deleted with a pattern
+python dir_cleaner.py pattern E:/workspace/football_app/ "*.cache" --dry-run
+
+# Delete old temporary files
+python dir_cleaner.py pattern E:/workspace/football_app/ "*tmp*" --older-than 30
+
+# Move build folders to trash instead of deleting
+python dir_cleaner.py preset E:/workspace/football_app/ build-artifacts --trash
+
+# Analyze disk usage
+python dir_cleaner.py analyze E:/workspace/football_app/ --depth 4
+
+# Find cleaning opportunities
+python dir_cleaner.py discover E:/workspace/football_app/
+
+# Generate an HTML report after cleaning
+python dir_cleaner.py node-modules E:/workspace/football_app/ --report cleanup_report.html
