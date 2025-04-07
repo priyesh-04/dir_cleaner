@@ -10,9 +10,9 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                             QStatusBar, QToolBar, QAction, QMenu, QSizePolicy,
                             QFormLayout, QDoubleSpinBox, QGridLayout, QStyle,
                             QFrame, QDialog, QTableWidget, QTableWidgetItem,
-                            QHeaderView)
+                            QHeaderView, QTextBrowser)
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, pyqtSlot, QSize, QDir, QTimer
-from PyQt5.QtGui import QIcon, QFont, QPixmap, QTextCursor
+from PyQt5.QtGui import QIcon, QFont, QPixmap, QTextCursor, QColor, QPalette
 
 # Import the worker thread implementation
 from worker import WorkerThread
@@ -24,6 +24,8 @@ import dir_cleaner
 import json
 import datetime
 from pathlib import Path
+import platform
+from PyQt5 import QtCore
 
 class DirCleanerWindow(QMainWindow):
     """Main application window"""
@@ -31,7 +33,16 @@ class DirCleanerWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Directory Cleaner")
         self.resize(1200, 800)
-        self.setWindowIcon(QIcon(self.style().standardIcon(QStyle.SP_TrashIcon)))
+        
+        # Set application style and colors
+        self.set_application_style()
+        
+        # Load icon if available, otherwise use default
+        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cleaner_icon.ico")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+        else:
+            self.setWindowIcon(QIcon(self.style().standardIcon(QStyle.SP_TrashIcon)))
         
         # Initialize variables
         self.current_directory = None
@@ -53,6 +64,127 @@ class DirCleanerWindow(QMainWindow):
         
         # Connect signals
         self.connect_signals()
+        
+    def set_application_style(self):
+        """Set a modern style for the application"""
+        # Set a modern blue-based color scheme
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #f5f5f5;
+            }
+            QGroupBox {
+                border: 1px solid #bdbdbd;
+                border-radius: 4px;
+                margin-top: 1ex;
+                font-weight: bold;
+                background-color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px;
+                color: #1976d2;
+            }
+            QTabWidget::pane {
+                border: 1px solid #bdbdbd;
+                border-radius: 4px;
+                background-color: #ffffff;
+            }
+            QTabBar::tab {
+                background-color: #e0e0e0;
+                padding: 6px 15px;
+                margin-right: 2px;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+            }
+            QTabBar::tab:selected {
+                background-color: #ffffff;
+                border: 1px solid #bdbdbd;
+                border-bottom-color: #ffffff;
+            }
+            QPushButton {
+                background-color: #2196f3;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 5px 15px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #1e88e5;
+            }
+            QPushButton:pressed {
+                background-color: #1976d2;
+            }
+            QPushButton:disabled {
+                background-color: #bdbdbd;
+            }
+            QLineEdit, QComboBox, QSpinBox {
+                border: 1px solid #bdbdbd;
+                border-radius: 4px;
+                padding: 5px;
+                background-color: white;
+            }
+            QTextEdit {
+                border: 1px solid #bdbdbd;
+                border-radius: 4px;
+                background-color: white;
+            }
+            QProgressBar {
+                border: 1px solid #bdbdbd;
+                border-radius: 4px;
+                background-color: #e0e0e0;
+                color: black;
+                text-align: center;
+            }
+            QProgressBar::chunk {
+                background-color: #2196f3;
+                border-radius: 3px;
+            }
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+            }
+            QMenuBar {
+                background-color: #ffffff;
+            }
+            QMenuBar::item:selected {
+                background-color: #2196f3;
+                color: white;
+            }
+            QMenu {
+                background-color: #ffffff;
+                border: 1px solid #bdbdbd;
+            }
+            QMenu::item:selected {
+                background-color: #2196f3;
+                color: white;
+            }
+            #run_btn {
+                background-color: #4caf50;
+                min-height: 40px;
+                font-size: 15px;
+            }
+            #run_btn:hover {
+                background-color: #43a047;
+            }
+            #run_btn:pressed {
+                background-color: #388e3c;
+            }
+            #run_btn:disabled {
+                background-color: #bdbdbd;
+            }
+        """)
+        
+        # Style the results text area
+        self.results_text_format = lambda message, color="black": f"<span style='color:{color};'>{message}</span><br>"
+        
+        # Set application icon if available
+        app_icon = QIcon()
+        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cleaner_icon.ico")
+        if os.path.exists(icon_path):
+            app_icon = QIcon(icon_path)
+            self.setWindowIcon(app_icon)
         
     def load_config(self):
         """Load configuration from file"""
@@ -646,20 +778,101 @@ class DirCleanerWindow(QMainWindow):
     
     def show_about(self):
         """Show about dialog"""
-        QMessageBox.about(self, "About Directory Cleaner",
-                         """<h1>Directory Cleaner</h1>
-                         <p>A comprehensive utility to clean up development directories.</p>
-                         <p>Features:</p>
-                         <ul>
-                         <li>Delete node_modules folders</li>
-                         <li>Delete subdirectories</li>
-                         <li>Delete by pattern</li>
-                         <li>Analyze disk usage</li>
-                         <li>Discover cleanup opportunities</li>
-                         <li>Run common cleanup presets</li>
-                         </ul>
-                         <p>&copy; 2025 Your Name</p>""")
-
+        about_text = """
+        <div style="text-align: center;">
+            <h1 style="color: #1976d2;">Directory Cleaner</h1>
+            <p style="font-size: 12px;">Version 1.0.0</p>
+        </div>
+        
+        <p>A powerful utility designed to help developers reclaim disk space by efficiently cleaning development directories.</p>
+        
+        <h3 style="color: #1976d2;">Key Features</h3>
+        <ul>
+            <li><b>Smart Cleaning:</b> Detect and remove node_modules folders, build artifacts, and cache directories</li>
+            <li><b>Custom Pattern Matching:</b> Find and delete directories matching specific patterns</li>
+            <li><b>Selective Operation:</b> Choose exactly which items to delete after scanning</li>
+            <li><b>Disk Usage Analysis:</b> Visualize which directories are consuming the most space</li>
+            <li><b>Interactive Mode:</b> Confirm each deletion with visual feedback</li>
+            <li><b>Safety First:</b> Dry-run mode and trash bin support to prevent accidental data loss</li>
+        </ul>
+        
+        <h3 style="color: #1976d2;">System Information</h3>
+        <p>Platform: {}<br>
+        Python: {}.{}.{}<br>
+        PyQt: {}</p>
+        
+        <h3 style="color: #1976d2;">License</h3>
+        <p>This software is released under the MIT License.<br>
+        Copyright © 2025 Your Company Name</p>
+        
+        <p style="font-size: 11px; color: #666;">
+        Third-party components:<br>
+        PyQt5 (GPL/Commercial)<br>
+        send2trash (BSD License)
+        </p>
+        
+        <div style="text-align: center; margin-top: 10px;">
+            <p><a href="https://github.com/YourUsername/directory-cleaner" style="color: #2196f3; text-decoration: none;">GitHub Project</a> | 
+            <a href="https://YourCompany.com/directory-cleaner" style="color: #2196f3; text-decoration: none;">Documentation</a></p>
+        </div>
+        """.format(
+            platform.system() + " " + platform.release(),
+            sys.version_info.major, sys.version_info.minor, sys.version_info.micro,
+            QtCore.PYQT_VERSION_STR
+        )
+        
+        # Create a custom dialog to have more control over the appearance
+        about_dialog = QDialog(self)
+        about_dialog.setWindowTitle("About Directory Cleaner")
+        about_dialog.setMinimumWidth(500)
+        about_dialog.setWindowFlags(about_dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        
+        layout = QVBoxLayout(about_dialog)
+        
+        # Add the icon at the top
+        icon_label = QLabel()
+        # Try to use PNG version first for better quality
+        png_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cleaner_icon.png")
+        ico_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cleaner_icon.ico")
+        
+        if os.path.exists(png_path):
+            icon_pixmap = QPixmap(png_path).scaled(128, 128, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            icon_label.setPixmap(icon_pixmap)
+        elif os.path.exists(ico_path):
+            icon_pixmap = QPixmap(ico_path).scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            icon_label.setPixmap(icon_pixmap)
+            
+        icon_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(icon_label)
+        
+        # Add the about text
+        text_browser = QTextBrowser()
+        text_browser.setOpenExternalLinks(True)
+        text_browser.setHtml(about_text)
+        text_browser.setStyleSheet("border: none; background-color: transparent;")
+        layout.addWidget(text_browser)
+        
+        # Add an OK button at the bottom
+        button_box = QHBoxLayout()
+        ok_button = QPushButton("OK")
+        ok_button.clicked.connect(about_dialog.accept)
+        ok_button.setStyleSheet("background-color: #2196f3; color: white; font-weight: bold; min-width: 80px;")
+        button_box.addStretch()
+        button_box.addWidget(ok_button)
+        layout.addLayout(button_box)
+        
+        # Set dialog style
+        about_dialog.setStyleSheet("""
+            QDialog {
+                background-color: white;
+            }
+            QLabel {
+                color: #1976d2;
+            }
+        """)
+        
+        about_dialog.exec_()
+    
     def closeEvent(self, event):
         """Handle window close event"""
         # Save configuration before closing
